@@ -31,11 +31,11 @@ To run this project locally, you'll need Node.js and npm installed. Follow these
 1.  **Clone the Repository**
     Open your terminal and run the following command to clone the project to your local machine:
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/Agrannya-Singh/GrandmasterAI
     ```
     Navigate into the newly created project directory:
     ```bash
-    cd <repository-folder-name>
+    cd GrandmasterAI
     ```
 
 2.  **Install Dependencies**
