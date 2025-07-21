@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { Chess, type Piece, type Square } from 'chess.js';
 import { cn } from '@/lib/utils';
 
 interface ChessboardProps {
-  board: (Piece | null)[][];
+  board: ReturnType<Chess['board']>;
   onMove: (from: Square, to: Square) => boolean;
   isPlayerTurn: boolean;
   lastMove: [Square, Square] | null;
@@ -21,112 +22,115 @@ const RANKS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
 export function Chessboard({ board, onMove, isPlayerTurn, lastMove }: ChessboardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
-  const [legalMoves, setLegalMoves] = useState<Square[]>([]);
+  
+  // A simplified way to get legal moves for UI highlights
+  // NOTE: This doesn't account for castling, en passant, etc.
+  // A full FEN from the main game state would be needed for perfect accuracy.
+  const legalMovesForSelectedPiece = useMemo(() => {
+    if (!selectedSquare) return [];
+    
+    const tempGame = new Chess();
+    // This is a simplified reconstruction of the game state. It has limitations.
+    tempGame.clear();
+    for (let r = 0; r < 8; r++) {
+      for (let f = 0; f < 8; f++) {
+        if (board[r][f]) {
+          tempGame.put(board[r][f]!, (FILES[f] + RANKS[7 - r]) as Square);
+        }
+      }
+    }
+    // Assume it's always white's turn for client-side move validation.
+    // The actual turn is managed in the parent component.
+    tempGame.load(tempGame.fen().replace(' b ', ' w '));
+    
+    try {
+      const moves = tempGame.moves({ square: selectedSquare, verbose: true });
+      return moves.map(move => move.to);
+    } catch (e) {
+      return [];
+    }
 
-  const handleSquareClick = (square: Square, piece: Piece | null) => {
+  }, [selectedSquare, board]);
+
+  const handleSquareClick = (square: Square) => {
     if (!isPlayerTurn) return;
+
+    const pieceOnSquare = board[7 - RANKS.indexOf(square[1])][FILES.indexOf(square[0])];
 
     if (selectedSquare) {
       if (square === selectedSquare) {
         // Deselect
         setSelectedSquare(null);
-        setLegalMoves([]);
       } else {
         // Try to move
         const moveSuccessful = onMove(selectedSquare, square);
         if (moveSuccessful) {
           setSelectedSquare(null);
-          setLegalMoves([]);
-        } else if (piece && piece.color === 'w') {
+        } else if (pieceOnSquare && pieceOnSquare.color === 'w') {
           // Select another white piece
-          selectPiece(square);
+          setSelectedSquare(square);
         } else {
-          // Clicked an empty or opponent square not a valid move
+          // Clicked an empty or opponent square that isn't a valid move
           setSelectedSquare(null);
-          setLegalMoves([]);
         }
       }
-    } else if (piece && piece.color === 'w') {
-      selectPiece(square);
+    } else if (pieceOnSquare && pieceOnSquare.color === 'w') {
+      // Select a white piece
+      setSelectedSquare(square);
     }
   };
 
-  const selectPiece = (square: Square) => {
-    setSelectedSquare(square);
-    // This is a bit of a hack to get legal moves without the full game state.
-    // It's not perfect but works for UI feedback.
-    const tempChess = new Chess();
-    try {
-      // This part is tricky as we only have the board, not the full FEN.
-      // A full FEN is needed for perfect legal move calculation (castling rights, en passant).
-      // We'll make a simplified FEN. This is a known limitation for this component.
-      const simpleFen = tempChess.boardToFen(board);
-      tempChess.load(simpleFen);
-      const moves = tempChess.moves({ square, verbose: true });
-      setLegalMoves(moves.map((move: any) => move.to));
-    } catch (e) {
-      console.error("Could not determine legal moves:", e);
-      setLegalMoves([]);
-    }
-  }
-
-  const boardWithCoords = useMemo(() => {
-    return board.map((row, rowIndex) =>
-      row.map((piece, colIndex) => {
-        const rank = RANKS[7 - rowIndex];
-        const file = FILES[colIndex];
-        const square = `${file}${rank}` as Square;
-        return { piece, square, rowIndex, colIndex };
-      })
-    ).flat();
-  }, [board]);
 
   return (
     <div className="grid grid-cols-8 grid-rows-8 aspect-square w-full max-w-[calc(100vh-12rem)] shadow-2xl rounded-md overflow-hidden border-4 border-primary/50">
-      {boardWithCoords.map(({ piece, square, rowIndex, colIndex }) => {
-        const isLightSquare = (rowIndex + colIndex) % 2 !== 0;
-        const isSelected = square === selectedSquare;
-        const isLegalMove = legalMoves.includes(square);
-        const isLastMove = lastMove?.includes(square);
+      {RANKS.slice().reverse().map((rank, rowIndex) =>
+        FILES.map((file, colIndex) => {
+          const square = `${file}${rank}` as Square;
+          const piece = board[rowIndex][colIndex];
+          const isLightSquare = (rowIndex + colIndex) % 2 !== 0;
+          const isSelected = square === selectedSquare;
+          const isLegalMove = legalMovesForSelectedPiece.includes(square);
+          const isLastMove = lastMove?.includes(square);
 
-        return (
-          <div
-            key={square}
-            onClick={() => handleSquareClick(square, piece)}
-            className={cn(
-              'flex items-center justify-center relative',
-              isLightSquare ? 'bg-background' : 'bg-primary/20',
-              isPlayerTurn && 'cursor-pointer',
-            )}
-          >
-            {piece && (
-              <span
-                className={cn(
-                  "text-5xl md:text-6xl lg:text-7xl drop-shadow-md transition-transform duration-100 ease-in-out",
-                  piece.color === 'w' ? 'text-white' : 'text-foreground',
-                  isSelected && "scale-110",
-                )}
-                style={{
-                  textShadow: piece.color === 'w' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(255,255,255,0.2)'
-                }}
-              >
-                {UNICODE_PIECES[piece.color === 'w' ? piece.type.toUpperCase() : piece.type]}
-              </span>
-            )}
-            {isSelected && (
-              <div className="absolute inset-0 bg-accent/50" />
-            )}
-            {isLegalMove && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-1/4 h-1/4 bg-accent/70 rounded-full" />
-              </div>
-            )}
-             {isLastMove && (
-              <div className="absolute inset-0 bg-primary/30" />
-            )}
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={square}
+              onClick={() => handleSquareClick(square)}
+              className={cn(
+                'flex items-center justify-center relative',
+                isLightSquare ? 'bg-background' : 'bg-primary/20',
+                isPlayerTurn && 'cursor-pointer',
+              )}
+            >
+              {piece && (
+                <span
+                  className={cn(
+                    "text-5xl md:text-6xl lg:text-7xl drop-shadow-md transition-transform duration-100 ease-in-out",
+                    piece.color === 'w' ? 'text-white' : 'text-foreground',
+                    isSelected && "scale-110",
+                  )}
+                  style={{
+                    textShadow: piece.color === 'w' ? '0 2px 4px rgba(0,0,0,0.5)' : '0 2px 4px rgba(255,255,255,0.2)'
+                  }}
+                >
+                  {UNICODE_PIECES[piece.color === 'w' ? piece.type.toUpperCase() : piece.type]}
+                </span>
+              )}
+              {isSelected && !isLastMove && (
+                <div className="absolute inset-0 bg-accent/50" />
+              )}
+              {isLegalMove && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-1/4 h-1/4 bg-accent/70 rounded-full" />
+                </div>
+              )}
+              {isLastMove && (
+                <div className="absolute inset-0 bg-primary/30" />
+              )}
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }

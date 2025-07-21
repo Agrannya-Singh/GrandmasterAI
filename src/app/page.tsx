@@ -2,14 +2,17 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Chess, type Square, type Piece } from 'chess.js';
+import { Chess, type Square } from 'chess.js';
 import { Chessboard } from '@/components/game/Chessboard';
 import { GameControls } from '@/components/game/GameControls';
 import { MoveHistory } from '@/components/game/MoveHistory';
+import { GameAnalysis } from '@/components/game/GameAnalysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Dna, Bot, RefreshCw, BarChart } from 'lucide-react';
+import { Bot, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { analyzeGame, type AnalyzeGameOutput } from '@/ai/flows/analyze-game';
+import { Button } from '@/components/ui/button';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard' | 'Impossible';
 
@@ -37,6 +40,8 @@ export default function Home() {
   const [isThinking, setIsThinking] = useState(false);
   const [gameStatus, setGameStatus] = useState('');
   const [lastMove, setLastMove] = useState<[Square, Square] | null>(null);
+  const [analysis, setAnalysis] = useState<AnalyzeGameOutput | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const { toast } = useToast();
 
@@ -47,6 +52,8 @@ export default function Home() {
     setHistory([]);
     setLastMove(null);
     setDifficulty(newDifficulty);
+    setAnalysis(null);
+    setIsAnalyzing(false);
     updateGameStatus(newGame);
     toast({
       title: "New Game Started",
@@ -80,7 +87,6 @@ export default function Home() {
 
     const gameCopy = new Chess(game.fen());
     
-    // Check if the move is a promotion
     const piece = gameCopy.get(from);
     const isPromotion =
       piece?.type === 'p' &&
@@ -99,11 +105,30 @@ export default function Home() {
 
     setGame(gameCopy);
     setFen(gameCopy.fen());
-    setHistory(gameCopy.history({ verbose: true }).map(h => h.san));
+    setHistory(gameCopy.history());
     setLastMove([move.from, move.to]);
     updateGameStatus(gameCopy);
     return true;
   }, [game, isThinking, updateGameStatus]);
+  
+  const handleAnalyzeGame = async () => {
+    setIsAnalyzing(true);
+    setAnalysis(null);
+    try {
+      const gameHistory = game.history().join(' ');
+      const result = await analyzeGame({ gameHistory });
+      setAnalysis(result);
+    } catch (error) {
+      console.error("Error analyzing game:", error);
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "There was an error analyzing the game.",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   useEffect(() => {
     const makeAiMove = async () => {
@@ -129,11 +154,11 @@ export default function Home() {
         }
         const data = await response.json();
         
-        if (data.success) {
+        if (data.success && data.bestmove) {
           const bestMove = data.bestmove.split(' ')[1];
           moveResult = gameCopy.move(bestMove, {sloppy: true});
         } else {
-          throw new Error(data.data || "Stockfish API returned success: false");
+          throw new Error(data.data || "Stockfish API returned success: false or no bestmove");
         }
         
         if (!moveResult) {
@@ -155,7 +180,7 @@ export default function Home() {
       if (moveResult) {
         setGame(gameCopy);
         setFen(gameCopy.fen());
-        setHistory(gameCopy.history({ verbose: true }).map(h => h.san));
+        setHistory(gameCopy.history());
         setLastMove([moveResult.from, moveResult.to]);
         updateGameStatus(gameCopy);
       }
@@ -173,7 +198,9 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const board = useMemo(() => game.board(), [game]);
+  const board = useMemo(() => game.board(), [fen]);
+
+  const isGameOver = useMemo(() => game.isGameOver(), [game]);
 
   return (
     <main className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
@@ -188,6 +215,11 @@ export default function Home() {
             isPlayerTurn={game.turn() === 'w' && !isThinking}
             lastMove={lastMove}
           />
+           {analysis && !isAnalyzing && (
+            <div className="w-full mt-4">
+              <GameAnalysis analysis={analysis} />
+            </div>
+          )}
         </div>
 
         <aside className="w-full lg:w-80 flex-shrink-0">
@@ -209,6 +241,9 @@ export default function Home() {
                 onDifficultyChange={(newDiff) => handleNewGame(newDiff as Difficulty)}
                 onNewGame={() => handleNewGame()}
                 isThinking={isThinking}
+                isGameOver={isGameOver}
+                onAnalyze={handleAnalyzeGame}
+                isAnalyzing={isAnalyzing}
               />
 
               <Separator />
