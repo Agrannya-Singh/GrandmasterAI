@@ -7,7 +7,7 @@ Welcome to Grandmaster AI, a sophisticated web-based chess application where you
 
 
 
-## How to Play
+## How to Play.
 
 Playing a game is simple and intuitive:
 
