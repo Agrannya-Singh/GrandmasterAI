@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -78,7 +79,19 @@ export default function Home() {
     if (game.turn() !== 'w' || isThinking) return false;
 
     const gameCopy = new Chess(game.fen());
-    const move = gameCopy.move({ from, to, promotion: 'q' });
+    
+    // Check if the move is a promotion
+    const piece = gameCopy.get(from);
+    const isPromotion =
+      piece?.type === 'p' &&
+      ((piece.color === 'w' && from[1] === '7' && to[1] === '8') ||
+       (piece.color === 'b' && from[1] === '2' && to[1] === '1'));
+    
+    const move = gameCopy.move({
+      from,
+      to,
+      promotion: isPromotion ? 'q' : undefined,
+    });
 
     if (move === null) {
       return false;
