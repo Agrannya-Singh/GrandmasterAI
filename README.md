@@ -3,6 +3,8 @@
 Welcome to Grandmaster AI, a sophisticated web-based chess application where you can test your skills against a powerful AI opponent. This project leverages modern web technologies and generative AI to create a rich and educational chess-playing experience. You can find the orignal GitHub repo at [here](https://github.com/Agrannya-Singh/GrandmasterAI)
 
 <img width="1589" height="853" alt="image" src="https://github.com/user-attachments/assets/1cc613da-597d-46b2-911b-9334734c23a1" />
+<img width="1548" height="898" alt="image" src="https://github.com/user-attachments/assets/110d2966-a00c-42fe-846a-29247d8f5b77" />
+
 
 
 ## How to Play
