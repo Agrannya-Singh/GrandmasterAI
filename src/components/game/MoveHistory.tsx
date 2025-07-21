@@ -3,20 +3,23 @@
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { History } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import type { MoveList } from "@/lib/move-list";
 
 interface MoveHistoryProps {
-  history: string[];
+  history: MoveList;
 }
 
 export function MoveHistory({ history }: MoveHistoryProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  const moves = useMemo(() => history.toArray(), [history]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [history]);
+  }, [moves]);
 
   return (
     <div className="space-y-2">
@@ -25,11 +28,11 @@ export function MoveHistory({ history }: MoveHistoryProps) {
         Move History
       </h3>
       <ScrollArea className="h-48 w-full rounded-md border bg-secondary/50 p-2" ref={scrollAreaRef}>
-        {history.length === 0 ? (
+        {moves.length === 0 ? (
           <p className="text-muted-foreground text-center p-4">No moves yet.</p>
         ) : (
           <ol className="text-sm font-mono">
-            {history.reduce((acc, move, index) => {
+            {moves.reduce((acc, move, index) => {
               if (index % 2 === 0) {
                 acc.push([move]);
               } else {
