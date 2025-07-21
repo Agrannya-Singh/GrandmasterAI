@@ -107,9 +107,7 @@ export default function Home() {
       return false;
     }
 
-    const newMoveHistory = new MoveList(moveHistory);
-    newMoveHistory.append(move.san);
-    setMoveHistory(newMoveHistory);
+    setMoveHistory(currentHistory => currentHistory.append(move.san));
     
     setGame(gameCopy);
     setFen(gameCopy.fen());
@@ -117,14 +115,14 @@ export default function Home() {
     setSuggestedMove(null); // Clear hint after move
     updateGameStatus(gameCopy);
     return true;
-  }, [game, isThinking, updateGameStatus, moveHistory]);
+  }, [game, isThinking, updateGameStatus]);
   
   const handleAnalyzeGame = async () => {
     setIsAnalyzing(true);
     setAnalysis(null);
     try {
-      const gameHistory = moveHistory.toString();
-      const result = await analyzeGame({ gameHistory });
+      const historyString = moveHistory.toString();
+      const result = await analyzeGame({ gameHistory: historyString });
       setAnalysis(result);
     } catch (error) {
       console.error("Error analyzing game:", error);
@@ -221,9 +219,7 @@ export default function Home() {
       }
 
       if (moveResult) {
-        const newMoveHistory = new MoveList(moveHistory);
-        newMoveHistory.append(moveResult.san);
-        setMoveHistory(newMoveHistory);
+        setMoveHistory(currentHistory => currentHistory.append(moveResult!.san));
 
         setGame(gameCopy);
         setFen(gameCopy.fen());
@@ -237,7 +233,7 @@ export default function Home() {
       const timer = setTimeout(makeAiMove, 500);
       return () => clearTimeout(timer);
     }
-  }, [fen, game, difficulty, updateGameStatus, toast, moveHistory]);
+  }, [fen, game, difficulty, updateGameStatus, toast]);
 
   useEffect(() => {
     handleNewGame('Medium');
