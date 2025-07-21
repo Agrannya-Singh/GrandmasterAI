@@ -10,6 +10,7 @@ interface ChessboardProps {
   onMove: (from: Square, to: Square) => boolean;
   isPlayerTurn: boolean;
   lastMove: [Square, Square] | null;
+  suggestedMove: [Square, Square] | null;
 }
 
 const UNICODE_PIECES: { [key: string]: string } = {
@@ -20,7 +21,7 @@ const UNICODE_PIECES: { [key: string]: string } = {
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const RANKS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
-export function Chessboard({ board, onMove, isPlayerTurn, lastMove }: ChessboardProps) {
+export function Chessboard({ board, onMove, isPlayerTurn, lastMove, suggestedMove }: ChessboardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   
   // A simplified way to get legal moves for UI highlights
@@ -91,6 +92,7 @@ export function Chessboard({ board, onMove, isPlayerTurn, lastMove }: Chessboard
           const isSelected = square === selectedSquare;
           const isLegalMove = legalMovesForSelectedPiece.includes(square);
           const isLastMove = lastMove?.includes(square);
+          const isSuggestedMove = suggestedMove?.includes(square);
 
           return (
             <div
@@ -115,6 +117,9 @@ export function Chessboard({ board, onMove, isPlayerTurn, lastMove }: Chessboard
                 >
                   {UNICODE_PIECES[piece.color === 'w' ? piece.type.toUpperCase() : piece.type]}
                 </span>
+              )}
+              {isSuggestedMove && (
+                 <div className="absolute inset-0 bg-green-500/40 border-2 border-green-500" />
               )}
               {isSelected && !isLastMove && (
                 <div className="absolute inset-0 bg-accent/50" />

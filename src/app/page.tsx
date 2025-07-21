@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Bot, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeGame, type AnalyzeGameOutput } from '@/ai/flows/analyze-game';
-import { Button } from '@/components/ui/button';
+import { suggestMove } from '@/ai/flows/suggest-move';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard' | 'Impossible';
 
@@ -42,6 +42,8 @@ export default function Home() {
   const [lastMove, setLastMove] = useState<[Square, Square] | null>(null);
   const [analysis, setAnalysis] = useState<AnalyzeGameOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [suggestedMove, setSuggestedMove] = useState<[Square, Square] | null>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const { toast } = useToast();
 
@@ -51,6 +53,7 @@ export default function Home() {
     setFen(newGame.fen());
     setHistory([]);
     setLastMove(null);
+    setSuggestedMove(null);
     setDifficulty(newDifficulty);
     setAnalysis(null);
     setIsAnalyzing(false);
@@ -107,6 +110,7 @@ export default function Home() {
     setFen(gameCopy.fen());
     setHistory(gameCopy.history());
     setLastMove([move.from, move.to]);
+    setSuggestedMove(null); // Clear hint after move
     updateGameStatus(gameCopy);
     return true;
   }, [game, isThinking, updateGameStatus]);
@@ -129,6 +133,41 @@ export default function Home() {
       setIsAnalyzing(false);
     }
   };
+
+  const handleSuggestMove = async () => {
+    if (game.turn() !== 'w' || isThinking || isSuggesting) return;
+    setIsSuggesting(true);
+    setSuggestedMove(null);
+    try {
+      const result = await suggestMove({ fen: game.fen() });
+      const from = result.move.substring(0, 2) as Square;
+      const to = result.move.substring(2, 4) as Square;
+      
+      const gameCopy = new Chess(game.fen());
+      const legalMoves = gameCopy.moves({verbose: true}).map(m => m.from + m.to);
+
+      if (legalMoves.includes(from + to)) {
+        setSuggestedMove([from, to]);
+        toast({
+          title: "AI Suggestion",
+          description: result.reasoning,
+        });
+      } else {
+        throw new Error("AI suggested an illegal move.");
+      }
+
+    } catch (error) {
+      console.error("Error suggesting move:", error);
+      toast({
+        variant: "destructive",
+        title: "Hint Failed",
+        description: "There was an error getting a move suggestion.",
+      });
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
 
   useEffect(() => {
     const makeAiMove = async () => {
@@ -214,6 +253,7 @@ export default function Home() {
             onMove={handleMove}
             isPlayerTurn={game.turn() === 'w' && !isThinking}
             lastMove={lastMove}
+            suggestedMove={suggestedMove}
           />
            {analysis && !isAnalyzing && (
             <div className="w-full mt-4">
@@ -244,6 +284,9 @@ export default function Home() {
                 isGameOver={isGameOver}
                 onAnalyze={handleAnalyzeGame}
                 isAnalyzing={isAnalyzing}
+                onSuggestMove={handleSuggestMove}
+                isSuggesting={isSuggesting}
+                isPlayerTurn={game.turn() === 'w'}
               />
 
               <Separator />
