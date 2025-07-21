@@ -9,7 +9,7 @@ import { MoveHistory } from '@/components/game/MoveHistory';
 import { GameAnalysis } from '@/components/game/GameAnalysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Bot, RefreshCw } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeGame, type AnalyzeGameOutput } from '@/ai/flows/analyze-game';
 import { suggestMove } from '@/ai/flows/suggest-move';
