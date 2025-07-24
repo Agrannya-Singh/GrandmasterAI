@@ -43,7 +43,7 @@ The current board position is: {{{fen}}}
 
 It is White's turn to move.
 
-Provide a single, strong move suggestion. Also, provide a concise, one-sentence explanation for your choice, focusing on the strategic or tactical advantage it provides.
+Provide a single, strong move suggestion. Also, provide a concise, one-sentence explanation for your choice, focusing on the strategic or tactical advantage it provides.Also I want you to roast the hell of of the player if they are playing a poor match.(but keep the roast friendly).
 
 Format your response as a JSON object matching the schema. The move should be in UCI format (e.g., e2e4, g1f3).`,
 });

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -13,6 +12,7 @@ import { Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeGame, type AnalyzeGameOutput } from '@/ai/flows/analyze-game';
 import { suggestMove } from '@/ai/flows/suggest-move';
+import { MoveList } from '@/lib/move-list';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard' | 'Impossible';
 
@@ -35,7 +35,7 @@ const getStockfishDepth = (difficulty: Difficulty): number => {
 export default function Home() {
   const [game, setGame] = useState(() => new Chess());
   const [fen, setFen] = useState(game.fen());
-  const [history, setHistory] = useState<string[]>([]);
+  const [moveHistory, setMoveHistory] = useState(() => new MoveList());
   const [difficulty, setDifficulty] = useState<Difficulty>('Medium');
   const [isThinking, setIsThinking] = useState(false);
   const [gameStatus, setGameStatus] = useState('');
@@ -51,7 +51,7 @@ export default function Home() {
     const newGame = new Chess();
     setGame(newGame);
     setFen(newGame.fen());
-    setHistory([]);
+    setMoveHistory(new MoveList());
     setLastMove(null);
     setSuggestedMove(null);
     setDifficulty(newDifficulty);
@@ -106,9 +106,10 @@ export default function Home() {
       return false;
     }
 
+    setMoveHistory(currentHistory => currentHistory.append(move.san));
+    
     setGame(gameCopy);
     setFen(gameCopy.fen());
-    setHistory(gameCopy.history());
     setLastMove([move.from, move.to]);
     setSuggestedMove(null); // Clear hint after move
     updateGameStatus(gameCopy);
@@ -119,8 +120,8 @@ export default function Home() {
     setIsAnalyzing(true);
     setAnalysis(null);
     try {
-      const gameHistory = game.history().join(' ');
-      const result = await analyzeGame({ gameHistory });
+      const historyString = moveHistory.toString();
+      const result = await analyzeGame({ gameHistory: historyString });
       setAnalysis(result);
     } catch (error) {
       console.error("Error analyzing game:", error);
@@ -217,9 +218,10 @@ export default function Home() {
       }
 
       if (moveResult) {
+        setMoveHistory(currentHistory => currentHistory.append(moveResult!.san));
+
         setGame(gameCopy);
         setFen(gameCopy.fen());
-        setHistory(gameCopy.history());
         setLastMove([moveResult.from, moveResult.to]);
         updateGameStatus(gameCopy);
       }
@@ -291,7 +293,7 @@ export default function Home() {
 
               <Separator />
 
-              <MoveHistory history={history} />
+              <MoveHistory history={moveHistory} />
             </CardContent>
           </Card>
         </aside>
