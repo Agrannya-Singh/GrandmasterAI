@@ -4,6 +4,11 @@ Welcome to Grandmaster AI, a sophisticated web-based chess application where you
 
 <img width="1589" height="853" alt="image" src="https://github.com/user-attachments/assets/1cc613da-597d-46b2-911b-9334734c23a1" />
 <img width="1548" height="898" alt="image" src="https://github.com/user-attachments/assets/110d2966-a00c-42fe-846a-29247d8f5b77" />
+##Game Analysis at the end of match
+<img width="1284" height="674" alt="image" src="https://github.com/user-attachments/assets/23bfbf1b-dd01-4ffe-9726-10987cb53dce" />
+<img width="1247" height="270" alt="image" src="https://github.com/user-attachments/assets/586211ff-879e-4732-a295-d9f267d4a2f5" />
+
+
 
 
 
